@@ -17,7 +17,7 @@ var ZIPS = OSX ? [
     'instantclient-sdk-linux.x64-11.2.0.3.0.zip'
 ];
 
-var CLIENT = cwd + '/src/' + (OSX ? 'instantclient_10_2' : 'instantclient_11_2');
+var CLIENT = '/opt/instantclient'; // cwd + '/src/' + (OSX ? 'instantclient_10_2' : 'instantclient_11_2');
 
 var CCFLAGS=[
     '-fPIC',
@@ -30,8 +30,10 @@ var LIBS=[
     '-L' + CLIENT + ' -locci -lclntsh',
     '-L/usr/local/silkjs/src/v8 -lv8'
 ];
+var LDFLAGS = OSX ? 
+	'-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' : 
+	'-shared -Wl,-soname,oracle_module.so,-rpath,/opt/instantclient';
 
-var LDFLAGS = OSX ? '-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' : '-shared -Wl,-soname,oracle_module.so';
 function exec(cmd) {
     console.log(cmd);
     process.exec(cmd);
@@ -61,6 +63,7 @@ function client() {
         }
         else {
             exec('ln -sf libocci.so.11.1 libocci.so');
+            exec('ln -sf libclntsh.so.11.1 libclntsh.so');
         }
         fs.chdir(cwd + '/src');
     }
@@ -71,14 +74,20 @@ function install() {
     exec('cp src/oracle_module.so lib');
     exec('mkdir -p /usr/local/silkjs/contrib/Oracle');
     exec('cp -rp index.js lib /usr/local/silkjs/contrib/Oracle');
-    if (OSX) {
-        exec('cp ' + CLIENT + '/libocci.dylib.10.1 /usr/local/silkjs/contrib/oracle/lib');
-        exec('cp ' + CLIENT + '/libclntsh.dylib.10.1 /usr/local/silkjs/contrib/oracle/lib');
-    }
+//    if (OSX) {
+//        exec('cp ' + CLIENT + '/libocci.dylib.10.1 /usr/local/silkjs/contrib/Oracle/lib');
+//        exec('cp ' + CLIENT + '/libclntsh.dylib.10.1 /usr/local/silkjs/contrib/Oracle/lib');
+//    }
+//	else {
+//        exec('cp ' + CLIENT + '/libocci.so.11.1 /usr/local/silkjs/contrib/Oracle/lib');
+//        exec('cp ' + CLIENT + '/libclntsh.so.11.1 /usr/local/silkjs/contrib/Oracle/lib');
+//        exec('cp ' + CLIENT + '/libnnz11.so /usr/local/silkjs/contrib/Oracle/lib');
+//		exec('chmod 0755 /usr/local/silkjs/contrib/Oracle/lib/lib*so*');
+//	}
 }
 
 function all() {
-    client();
+//    client();
     fs.chdir('src');
     exec('g++ -c ' + CCFLAGS.join(' ') + ' -o oracle.o oracle.cpp');
     exec('g++ ' + LDFLAGS + ' -o oracle_module.so oracle.o ' + LIBS.join(' '));

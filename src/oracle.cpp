@@ -2,7 +2,7 @@
 #include <occi.h>
 
 // using namespace oracle::occi;
-#define Environment oracle::occi::Environment
+//#define Environment oracle::occi::Environment
 #define Connection oracle::occi::Connection
 #define MetaData oracle::occi::MetaData
 #define Statement oracle::occi::Statement
@@ -10,7 +10,7 @@
 #define SQLException oracle::occi::SQLException
 
 struct ostate {
-    Environment *environment;
+    oracle::occi::Environment *environment;
     Connection *con;
 };
 
@@ -21,15 +21,21 @@ static JSVAL connect(JSARGS args) {
     String::Utf8Value db(args[3]->ToString());
 
     ostate *o = new ostate;
-    o->environment = Environment::createEnvironment(Environment::DEFAULT);
-    o->con = o->environment->createConnection(*user, *password, *db);
+	try {
+		o->environment = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::THREADED_MUTEXED);
+	    o->con = o->environment->createConnection(*user, *password, *db);
+	}
+	catch (SQLException &e) {
+		delete o;
+        return ThrowException(String::New(e.what()));
+	}
     return External::New(o);
 }
 
 static JSVAL close(JSARGS args) {
     ostate *o = (ostate *)JSEXTERN(args[0]);
     o->environment->terminateConnection(o->con);
-	Environment::terminateEnvironment(o->environment);
+	oracle::occi::Environment::terminateEnvironment(o->environment);
     delete o;
     return Undefined();
 }
@@ -103,6 +109,7 @@ static JSVAL getDataRows(JSARGS args) {
         r = s->executeQuery();
         vector<MetaData>cols = r->getColumnListMetaData();
         int num_fields = cols.size();
+
         Local<String> names[num_fields];
         int types[num_fields];
         for (int n=0; n<num_fields; n++) {
@@ -114,21 +121,21 @@ static JSVAL getDataRows(JSARGS args) {
         while (r->next()) {
             JSOBJ obj = Object::New();
             for (int i=0; i<num_fields; i++) {
-                if (r->isNull(i)) {
+                if (false && r->isNull(i)) {
                     obj->Set(names[i], Null());
                 }
                 else {
                     switch (types[i]) {
                         case SQLT_INT:
-                            obj->Set(names[i], Number::New(r->getInt(i)));
+                            obj->Set(names[i], Number::New(r->getInt(i)+1));
                             break;
                         case SQLT_NUM:
                         case SQLT_FLT:
                         case SQLT_BDOUBLE:
-                            obj->Set(names[i], Number::New(r->getDouble(i)));
+						case SQLT_DATE:
                             break;
                         default:
-                            obj->Set(names[i], String::New(r->getString(i).c_str()));
+                            obj->Set(names[i], String::New(r->getString(i+1).c_str()));
                             break;
                     }
                 }
