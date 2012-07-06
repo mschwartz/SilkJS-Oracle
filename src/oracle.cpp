@@ -8,6 +8,9 @@
 #define Statement oracle::occi::Statement
 #define ResultSet oracle::occi::ResultSet
 #define SQLException oracle::occi::SQLException
+#define Stream oracle::occi::Stream
+#define Clob oracle::occi::Clob
+#define OCCI_LOB_READONLY oracle::occi::OCCI_LOB_READONLY
 
 struct ostate {
     oracle::occi::Environment *environment;
@@ -64,21 +67,21 @@ static JSVAL getDataRow(JSARGS args) {
 		}
 		JSOBJ obj = Object::New();
 		for (int i=0; i<num_fields; i++) {
-			if (r->isNull(i)) {
+			if (r->isNull(i+1)) {
 				obj->Set(names[i], Null());
 			}
 			else {
 				switch (types[i]) {
 					case SQLT_INT:
-						obj->Set(names[i], Number::New(r->getInt(i)));
+						obj->Set(names[i], Number::New(r->getInt(i+1)));
 						break;
                     case SQLT_NUM:
                     case SQLT_FLT:
                     case SQLT_BDOUBLE:
-                        obj->Set(names[i], Number::New(r->getDouble(i)));
+                        obj->Set(names[i], Number::New(r->getDouble(i+1)));
                         break;
                     default:
-                        obj->Set(names[i], String::New(r->getString(i).c_str()));
+                        obj->Set(names[i], String::New(r->getString(i+1).c_str()));
                         break;
 				}
 			}
@@ -121,19 +124,33 @@ static JSVAL getDataRows(JSARGS args) {
         while (r->next()) {
             JSOBJ obj = Object::New();
             for (int i=0; i<num_fields; i++) {
-                if (false && r->isNull(i)) {
+                if (false && r->isNull(i+1)) {
                     obj->Set(names[i], Null());
                 }
                 else {
                     switch (types[i]) {
                         case SQLT_INT:
-                            obj->Set(names[i], Number::New(r->getInt(i)+1));
+                            obj->Set(names[i], Number::New(r->getInt(i+1)));
                             break;
                         case SQLT_NUM:
                         case SQLT_FLT:
                         case SQLT_BDOUBLE:
-						case SQLT_DATE:
-                            break;
+							obj->Set(names[i], Number::New(r->getDouble(i+1)));
+							break;
+						case SQLT_CLOB:
+							{
+								Clob clob = r->getClob(i+1);
+								clob.open(OCCI_LOB_READONLY);
+								int len = clob.length();
+								Stream *stream = clob.getStream();
+								char *buffer = new char[len];
+								stream->readBuffer(buffer, len);
+								obj->Set(names[i], String::New(buffer, len));
+								clob.closeStream(stream);
+								clob.close();
+								delete [] buffer;
+							}
+							break;
                         default:
                             obj->Set(names[i], String::New(r->getString(i+1).c_str()));
                             break;
@@ -180,21 +197,35 @@ static JSVAL getScalar(JSARGS args) {
             return False();
         }
         Handle<Value> v;
-        if (r->isNull(0)) {
+        if (r->isNull(1)) {
             v = Null();
         }
         else {
             switch (types[0]) {
                 case SQLT_INT:
-                    v = Number::New(r->getInt(0));
+                    v = Number::New(r->getInt(1));
                     break;
                 case SQLT_NUM:
                 case SQLT_FLT:
                 case SQLT_BDOUBLE:
-                    v = Number::New(r->getDouble(0));
+                    v = Number::New(r->getDouble(1));
                     break;
+				case SQLT_CLOB:
+					{
+						Clob clob = r->getClob(1);
+						clob.open(OCCI_LOB_READONLY);
+						int len = clob.length();
+						Stream *stream = clob.getStream();
+						char *buffer = new char[len];
+						stream->readBuffer(buffer, len);
+						v = String::New(buffer, len);
+						clob.closeStream(stream);
+						clob.close();
+						delete [] buffer;
+					}
+					break;
                 default:
-                    v = String::New(r->getString(0).c_str());
+                    v = String::New(r->getString(1).c_str());
                     break;
             }
         }
@@ -216,9 +247,11 @@ static JSVAL getScalar(JSARGS args) {
 static JSVAL update(JSARGS args) {
     ostate *o = (ostate *)JSEXTERN(args[0]);
     String::Utf8Value query(args[1]->ToString());
+	bool b = args[2]->BooleanValue();
     Statement *s = NULL;
     try {
         s = o->con->createStatement();
+		s->setAutoCommit(b);
         int n = s->executeUpdate(*query);
         o->con->terminateStatement(s);
         return Integer::New(n);

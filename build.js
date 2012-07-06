@@ -73,7 +73,8 @@ function install() {
     fs.chdir(cwd);
     exec('cp src/oracle_module.so lib');
     exec('mkdir -p /usr/local/silkjs/contrib/Oracle');
-    exec('cp -rp index.js lib /usr/local/silkjs/contrib/Oracle');
+    exec('cp -rp index.js lib bin /usr/local/silkjs/contrib/Oracle');
+	exec('ln -sf /usr/local/silkjs/contrib/Oracle/bin/oratool.js /usr/local/bin');
 //    if (OSX) {
 //        exec('cp ' + CLIENT + '/libocci.dylib.10.1 /usr/local/silkjs/contrib/Oracle/lib');
 //        exec('cp ' + CLIENT + '/libclntsh.dylib.10.1 /usr/local/silkjs/contrib/Oracle/lib');
