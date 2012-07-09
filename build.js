@@ -50,6 +50,7 @@ function client() {
             exec('unzip -o ' + cwd + '/instantclient/' + zip);
         });
         if (OSX) {
+            exec('sudo mkdir -p /opt');
             exec('sudo mv instantclient_10_2 ' + CLIENT);
             fs.chdir(CLIENT);
             exec('ln -sf libocci.dylib.10.1 libocci.dylib');
