@@ -30,8 +30,8 @@ var LIBS=[
     '-L' + CLIENT + ' -locci -lclntsh',
     '-L/usr/local/silkjs/src/v8 -lv8'
 ];
-var LDFLAGS = OSX ? 
-	'-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' : 
+var LDFLAGS = OSX ?
+	'-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' :
 	'-shared -Wl,-soname,oracle_module.so,-rpath,/opt/instantclient';
 
 function exec(cmd) {
@@ -49,8 +49,9 @@ function client() {
         ZIPS.each(function(zip) {
             exec('unzip -o ' + cwd + '/instantclient/' + zip);
         });
-        fs.chdir(CLIENT);
         if (OSX) {
+            exec('sudo mv instantclient_10_2 ' + CLIENT);
+            fs.chdir(CLIENT);
             exec('ln -sf libocci.dylib.10.1 libocci.dylib');
             exec('xattr -d com.apple.quarantine libocci.dylib.10.1');
             exec('ln -sf libclntsh.dylib.10.1 libclntsh.dylib');
@@ -88,7 +89,7 @@ function install() {
 }
 
 function all() {
-//    client();
+   client();
     fs.chdir('src');
     exec('g++ -c ' + CCFLAGS.join(' ') + ' -o oracle.o oracle.cpp');
     exec('g++ ' + LDFLAGS + ' -o oracle_module.so oracle.o ' + LIBS.join(' '));
