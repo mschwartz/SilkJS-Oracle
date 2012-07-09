@@ -49,8 +49,8 @@ function client() {
         ZIPS.each(function(zip) {
             exec('unzip -o ' + cwd + '/instantclient/' + zip);
         });
+        exec('sudo mkdir -p /opt');
         if (OSX) {
-            exec('sudo mkdir -p /opt');
             exec('sudo mv instantclient_10_2 ' + CLIENT);
             fs.chdir(CLIENT);
             exec('ln -sf libocci.dylib.10.1 libocci.dylib');
@@ -64,6 +64,8 @@ function client() {
             // exec('install_name_tool -change /b/227/rdbms/lib/libocci.dylib.10.1 @rpath/libocci.dylib.10.1 libocci.dylib.10.1');
         }
         else {
+            exec('sudo mv instantclient_11_2 ' + CLIENT);
+            fs.chdir(CLIENT);
             exec('ln -sf libocci.so.11.1 libocci.so');
             exec('ln -sf libclntsh.so.11.1 libclntsh.so');
         }
