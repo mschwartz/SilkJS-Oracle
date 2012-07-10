@@ -10,8 +10,8 @@ var env = process.env();
 var OSX = env.OS === 'OSX';
 
 var ZIPS = OSX ? [
-    'instantclient-basic-10.2.0.4.0-macosx-x64.zip',
-    'instantclient-sdk-10.2.0.4.0-macosx-x64.zip'
+    'instantclient-basic-10.2.0.4.0-macosx-x86.zip',
+    'instantclient-sdk-10.2.0.4.0-macosx-x86.zip'
 ] : [
     'instantclient-basic-linux.x64-11.2.0.3.0.zip',
     'instantclient-sdk-linux.x64-11.2.0.3.0.zip'
@@ -31,7 +31,8 @@ var LIBS=[
     '-L/usr/local/silkjs/src/v8 -lv8'
 ];
 var LDFLAGS = OSX ?
-	'-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' :
+    // '-shared -Wl,-install_name,oracle_module.,-rpath,/usr/local/silkjs/contrib/Oracle/lib' :
+	'-shared -Wl,-install_name,oracle_module.,-rpath,/opt/instantclient' :
 	'-shared -Wl,-soname,oracle_module.so,-rpath,/opt/instantclient';
 
 function exec(cmd) {

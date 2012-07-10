@@ -25,13 +25,20 @@ static JSVAL connect(JSARGS args) {
 
     ostate *o = new ostate;
 	try {
+printf("a\n");
 		o->environment = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::THREADED_MUTEXED);
+printf("b\n");
 	    o->con = o->environment->createConnection(*user, *password, *db);
+printf("c\n");
 	}
 	catch (SQLException &e) {
+printf("d\n");
 		delete o;
+printf("e\n");
         return ThrowException(String::New(e.what()));
 	}
+printf("f\n");
+
     return External::New(o);
 }
 
