@@ -10,6 +10,7 @@
 #define SQLException oracle::occi::SQLException
 #define Stream oracle::occi::Stream
 #define Clob oracle::occi::Clob
+#define Blob oracle::occi::Blob
 #define OCCI_LOB_READONLY oracle::occi::OCCI_LOB_READONLY
 
 struct ostate {
@@ -25,20 +26,13 @@ static JSVAL connect(JSARGS args) {
 
     ostate *o = new ostate;
 	try {
-printf("a\n");
 		o->environment = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::THREADED_MUTEXED);
-printf("b\n");
 	    o->con = o->environment->createConnection(*user, *password, *db);
-printf("c\n");
 	}
 	catch (SQLException &e) {
-printf("d\n");
 		delete o;
-printf("e\n");
         return ThrowException(String::New(e.what()));
 	}
-printf("f\n");
-
     return External::New(o);
 }
 
@@ -87,6 +81,17 @@ static JSVAL getDataRow(JSARGS args) {
                     case SQLT_BDOUBLE:
                         obj->Set(names[i], Number::New(r->getDouble(i+1)));
                         break;
+                    case SQLT_CLOB:
+                    case SQLT_BLOB:
+                        {
+                            Blob blob = r->getBlob(i+1);
+                            int len = blob.length();
+                            char *buffer = new char[len];
+                            blob.read(len, (unsigned char *)buffer, len);
+                            obj->Set(names[i], String::New(buffer, len));
+                            delete [] buffer;
+                        }
+                        break;
                     default:
                         obj->Set(names[i], String::New(r->getString(i+1).c_str()));
                         break;
@@ -131,7 +136,7 @@ static JSVAL getDataRows(JSARGS args) {
         while (r->next()) {
             JSOBJ obj = Object::New();
             for (int i=0; i<num_fields; i++) {
-                if (false && r->isNull(i+1)) {
+                if (r->isNull(i+1)) {
                     obj->Set(names[i], Null());
                 }
                 else {
@@ -144,19 +149,16 @@ static JSVAL getDataRows(JSARGS args) {
                         case SQLT_BDOUBLE:
 							obj->Set(names[i], Number::New(r->getDouble(i+1)));
 							break;
-						case SQLT_CLOB:
-							{
-								Clob clob = r->getClob(i+1);
-								clob.open(OCCI_LOB_READONLY);
-								int len = clob.length();
-								Stream *stream = clob.getStream();
-								char *buffer = new char[len];
-								stream->readBuffer(buffer, len);
-								obj->Set(names[i], String::New(buffer, len));
-								clob.closeStream(stream);
-								clob.close();
-								delete [] buffer;
-							}
+                        case SQLT_CLOB:
+                        case SQLT_BLOB:
+                            {
+                                Blob blob = r->getBlob(i+1);
+                                int len = blob.length();
+                                char *buffer = new char[len];
+                                blob.read(len, (unsigned char *)buffer, len);
+                                obj->Set(names[i], String::New(buffer, len));
+                                delete [] buffer;
+                            }
 							break;
                         default:
                             obj->Set(names[i], String::New(r->getString(i+1).c_str()));
@@ -217,19 +219,16 @@ static JSVAL getScalar(JSARGS args) {
                 case SQLT_BDOUBLE:
                     v = Number::New(r->getDouble(1));
                     break;
-				case SQLT_CLOB:
-					{
-						Clob clob = r->getClob(1);
-						clob.open(OCCI_LOB_READONLY);
-						int len = clob.length();
-						Stream *stream = clob.getStream();
-						char *buffer = new char[len];
-						stream->readBuffer(buffer, len);
-						v = String::New(buffer, len);
-						clob.closeStream(stream);
-						clob.close();
-						delete [] buffer;
-					}
+                case SQLT_CLOB:
+                case SQLT_BLOB:
+                    {
+                        Blob blob = r->getBlob(1);
+                        int len = blob.length();
+                        char *buffer = new char[len];
+                        blob.read(len, (unsigned char *)buffer, len);
+                        v = String::New(buffer, len);
+                        delete [] buffer;
+                    }
 					break;
                 default:
                     v = String::New(r->getString(1).c_str());
