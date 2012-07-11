@@ -128,7 +128,7 @@ function main(connectString) {
 		}
 		try {
 			query = query.replace(/;$/, '');
-			var parts = query.split(' ');
+			parts = query.split(' ');
 			var cmd = parts[0].toLowerCase();
 			switch (cmd) {
 				case 'ddrop':
@@ -141,8 +141,6 @@ function main(connectString) {
 					show(parts[1], parts[2]);
 					break;
 				case 'select':
-				case 'desc':
-				case 'describe':
 					console.dir(SQL.getDataRows(query));
 					break;
 				case 'start':
