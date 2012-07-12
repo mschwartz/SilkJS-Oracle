@@ -138,7 +138,7 @@ static JSVAL getDataRows(JSARGS args) {
         while (r->next()) {
             JSOBJ obj = Object::New();
             for (int i=0; i<num_fields; i++) {
-                if (false && r->isNull(i+1)) {
+                if (r->isNull(i+1)) {
                     obj->Set(names[i], Null());
                 }
                 else {
