@@ -27,7 +27,7 @@ var CCFLAGS=[
 ];
 
 var LIBS=[
-    '-L' + CLIENT + ' -locci -lclntsh',
+    '-L' + CLIENT + ' -locci -lclntsh' + (OSX ? '' : ' -lnnz11'),
     '-L/usr/local/silkjs/src/v8 -lv8'
 ];
 var LDFLAGS = OSX ?
